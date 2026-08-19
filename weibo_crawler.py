@@ -115,12 +115,17 @@ def collect_new_posts(existing_ids: set) -> list:
         try:
             data = fetch_page(page)
         except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
-            print("[警告] 第 %d 页请求失败：%s" % (page, e), file=sys.stderr)
+            msg = "[错误] 第 %d 页请求失败（可能 Cookie 失效或网络问题）：%s" % (page, e)
+            print(msg, file=sys.stderr)
+            if page == 1:
+                sys.exit(1)
             break
 
         if data.get("ok") != 1:
-            print("[警告] 接口返回异常（可能 Cookie 失效或被风控）：ok=%s msg=%s"
-                  % (data.get("ok"), data.get("msg")), file=sys.stderr)
+            msg = "[错误] 接口返回异常（可能 Cookie 失效或被风控）：ok=%s msg=%s" % (data.get("ok"), data.get("msg"))
+            print(msg, file=sys.stderr)
+            if page == 1:
+                sys.exit(1)
             break
 
         cards = ((data.get("data") or {}).get("cards")) or []
