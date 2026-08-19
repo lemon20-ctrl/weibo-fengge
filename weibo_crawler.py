@@ -36,6 +36,11 @@ def fetch_page(page: int) -> dict:
     """请求一页微博列表，返回解析后的 JSON。"""
     url = API_URL if page <= 1 else API_URL + "&page=%d" % page
     cookie = os.environ.get("WEIBO_COOKIE", "").strip()
+    if not cookie:
+        print("[提示/诊断] 环境变量 WEIBO_COOKIE 为空！请检查 GitHub Secret 变量名是否为 WEIBO_COOKIE。", file=sys.stderr)
+    elif "SUB=" not in cookie:
+        print("[提示/诊断] WEIBO_COOKIE 中缺少 SUB= 关键登录凭证，请确认是在已登录状态下复制的！", file=sys.stderr)
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) "
@@ -122,7 +127,9 @@ def collect_new_posts(existing_ids: set) -> list:
             break
 
         if data.get("ok") != 1:
-            msg = "[错误] 接口返回异常（可能 Cookie 失效或被风控）：ok=%s msg=%s" % (data.get("ok"), data.get("msg"))
+            code = data.get("ok")
+            detail = "（ok=-100 代表未登录/Cookie凭证无效）" if code == -100 else ""
+            msg = "[错误] 接口返回异常%s：ok=%s msg=%s" % (detail, code, data.get("msg"))
             print(msg, file=sys.stderr)
             if page == 1:
                 sys.exit(1)
